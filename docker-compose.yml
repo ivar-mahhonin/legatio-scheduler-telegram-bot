@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  legatio-db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=legatio-db
+    ports:
+      - '5432:5432'
+    volumes:
+      - db:/var/lib/postgresql11/data
+      - ./db/init-scripts.sql:/docker-entrypoint-initdb.d/scripts.sql
+
+volumes:
+  db:
+    driver: local

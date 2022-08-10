@@ -1,0 +1,6 @@
+/.bsp/
+target/
+.idea
+project/target
+src/main/resources/telegram-bot.conf
+src/main/resources/db.conf
