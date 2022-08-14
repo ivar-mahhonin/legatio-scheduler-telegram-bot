@@ -1,4 +1,4 @@
-# legatio-scheduler-telegram-bot
+# Legatio Bot
 
 Managing scheduled messages or groups in Telegram is a pain if you have more than one group/channel 
 The process of recurring messages is  disorganised and time-consuming.
