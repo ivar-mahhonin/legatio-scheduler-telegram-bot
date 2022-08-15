@@ -1,7 +1,7 @@
 package legatio.services
 
 import legatio.db.SlickTables
-import legatio.db.SlickTables.SchedulesTable
+import legatio.db.tables.SchedulesTable
 import legatio.models.Schedule
 
 import scala.concurrent.Future

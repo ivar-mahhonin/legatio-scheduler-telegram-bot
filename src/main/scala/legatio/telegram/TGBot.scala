@@ -4,7 +4,7 @@ import akka.util.Timeout
 import cats.instances.future._
 import cats.syntax.functor._
 import com.bot4s.telegram.api.RequestHandler
-import com.bot4s.telegram.api.declarative.{Commands, Updates}
+import com.bot4s.telegram.api.declarative.{Commands, JoinRequests, Updates}
 import com.bot4s.telegram.clients.ScalajHttpClient
 import com.bot4s.telegram.future.{Polling, TelegramBot}
 import legatio.actors.{GroupsRepositoryManager, RepositoryManagers}
@@ -14,18 +14,21 @@ import com.bot4s.telegram.models.{BotCommand, ChatId}
 import legatio.actors.RepositoryManagers.system
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import akka.actor.typed.scaladsl.AskPattern._
 
-class TGBot(token: String) extends TelegramBot with Polling with Commands[Future] with Updates[Future] {
+class TGBot(token: String) extends TelegramBot with Polling with Commands[Future] with Updates[Future] with JoinRequests[Future] {
   LoggerConfig.factory = PrintLoggerFactory()
   LoggerConfig.level = LogLevel.TRACE
 
-  import akka.actor.typed.scaladsl.AskPattern._
-
   override val client: RequestHandler[Future] = new ScalajHttpClient(token)
   implicit val timeout: Timeout = 3.seconds
+
   private var botIDOpt: Option[Long] = None
+  private val groups = RepositoryManagers.groups
+  private val schedules = RepositoryManagers.schedules
+
 
   override def run(): Future[Unit] = {
     logger.info(s"[TGBot] starting")
@@ -40,16 +43,29 @@ class TGBot(token: String) extends TelegramBot with Polling with Commands[Future
     runFuture
   }
 
-  private def registerBotInNewGroup(chatId: Long, isChannel: Boolean, isChat: Boolean) =
-    RepositoryManagers.groups.ask(ref => GroupsRepositoryManager.RegisterInGroup(chatId, isChannel, isChat, ref))
+  private def chatIdToLong(chatId: ChatId) = chatId.toEither match {
+    case Left(l) => l
+    case Right(s) => s.toLong
+  }
 
-  private def removeBotFromExistingGroup(chatId: Long) =
-    RepositoryManagers.groups.ask(ref => GroupsRepositoryManager.RemoveFromGroup(chatId, ref))
+  private def registerBotInGroup(chatId: ChatId): Unit = {
+    println(s"[TGBot] Registering bot at group[$chatId]")
+    val registerFuture = groups.ask(ref => GroupsRepositoryManager.RegisterInGroup(
+      chatIdToLong(chatId), chatId.isChannel, chatId.isChat, ref)
+    )
+    registerFuture.onComplete {
+      case Success(GroupsRepositoryManager.RegisterInGroupSuccess) => println(s"[TGBot] Successfully registered bot in new group[$chatId]")
+      case Failure(ex) => println(s"[TGBot] Could not register bot in new group[$chatId]: $ex")
+    }
+  }
 
-  private def chatIdToLong(chatId: ChatId) = {
-    chatId.toEither match {
-      case Left(l) => l
-      case Right(s) => s.toLong
+  private def removeBotFromGroup(chatId: ChatId, isBot: Boolean, leftMemberId: Long, botID: Long): Unit = {
+    if (isBot && leftMemberId == botID) {
+      val removeFuture = RepositoryManagers.groups.ask(ref => GroupsRepositoryManager.RemoveFromGroup(chatIdToLong(chatId), ref))
+      removeFuture.onComplete {
+        case Success(GroupsRepositoryManager.RemoveFromGroupSuccess) => println(s"[TGBot] Successfully removed from group[$chatId]")
+        case Failure(ex) => println(s"[TGBot] Could not remove from group[$chatId]: $ex")
+      }
     }
   }
 
@@ -63,35 +79,29 @@ class TGBot(token: String) extends TelegramBot with Polling with Commands[Future
     )
   ).void
 
-  onUpdate { action =>
+  onJoinRequest { req =>
+    println("On Join Request")
+    Future()
+  }
+
+  onUpdate { update =>
     if (botIDOpt.isDefined) {
+      val botID = botIDOpt.get
+
       val chatMembersInfoOpt = for {
-        m <- action.message
+        m <- update.message
         leftChatMember = m.leftChatMember
         newChatMembers = m.newChatMembers
       } yield (m.chat.chatId, leftChatMember, newChatMembers)
 
-      val botID = botIDOpt.get
       chatMembersInfoOpt match {
-        case Some((chat: ChatId, Some(leftMember), _)) =>
-          if (leftMember.isBot && leftMember.id == botID) {
-            val removeFuture = removeBotFromExistingGroup(chatIdToLong(chat))
-            removeFuture.onComplete {
-              case Success(GroupsRepositoryManager.RegisterInGroupSuccess) => println(s"[TGBot] Successfully removed from group[$chat]")
-              case Failure(ex) => println(s"[TGBot] Could not remove from group[$chat]: $ex")
-            }
-          }
-        case Some((chat: ChatId, _, Some(joinedMembers))) =>
+        case Some((chatId: ChatId, _, Some(joinedMembers))) =>
           val botJoinedOpt = joinedMembers.find(u => u.isBot && u.id == botID)
           botJoinedOpt match {
-            case Some(_) =>
-              val registerFuture = registerBotInNewGroup(chatIdToLong(chat), chat.isChannel, chat.isChat)
-              registerFuture.onComplete {
-                case Success(GroupsRepositoryManager.RegisterInGroupSuccess) => println(s"[TGBot] Successfully registered bot in new group[$chat]")
-                case Failure(ex) => println(s"[TGBot] Could not register bot in new group[$chat]: $ex")
-              }
+            case Some(_) => registerBotInGroup(chatId)
             case _ =>
           }
+        case Some((chatId: ChatId, Some(leftMember), _)) => removeBotFromGroup(chatId, leftMember.isBot, leftMember.id, botID)
         case _ =>
       }
     }

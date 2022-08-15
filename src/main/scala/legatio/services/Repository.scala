@@ -1,7 +1,7 @@
 package legatio.services
 
 import legatio.db.DbConnection
-import legatio.db.SlickTables.BaseTable
+import legatio.db.tables.BaseTable
 import legatio.models.BaseEntity
 import slick.jdbc.PostgresProfile.api._
 

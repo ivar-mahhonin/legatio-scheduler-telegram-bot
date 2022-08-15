@@ -1,7 +1,7 @@
 package legatio.services
 
 import legatio.db.SlickTables
-import legatio.db.SlickTables.GroupsTable
+import legatio.db.tables.GroupsTable
 import legatio.models.Group
 import scala.concurrent.Future
 import slick.jdbc.PostgresProfile.api._

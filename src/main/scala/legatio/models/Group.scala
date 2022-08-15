@@ -1,8 +1,10 @@
 package legatio.models
 
+import java.sql.Timestamp
+
 final case class Group(id: Option[Long] = None,
                        externalId: Long,
                        isChannel: Boolean = false,
                        isGroup: Boolean = false,
-                       createdDate: Option[Long] = None,
-                       updatedDate: Option[Long] = None) extends BaseEntity
+                       createdDate: Option[Timestamp] = None,
+                       updatedDate: Option[Timestamp] = None) extends BaseEntity
