@@ -3,7 +3,7 @@ package legatio.actors
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 
-trait RepositoryManager[T] {
+trait RepositoryService[T] {
   trait Command
 
   trait CommandResult extends Command

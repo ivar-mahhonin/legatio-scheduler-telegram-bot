@@ -6,7 +6,7 @@ import legatio.models.Group
 import legatio.services.GroupsRepository
 import scala.util.{Failure, Success}
 
-object GroupsRepositoryManager extends RepositoryManager[Group] {
+object GroupsRepositoryService extends RepositoryService[Group] {
   case class RegisterInGroup(groupId: Long, isChannel: Boolean = false, isGroup: Boolean = false, replyTo: ActorRef[CommandResult]) extends Command
   case object RegisterInGroupSuccess extends CommandResult
   case class RemoveFromGroup(groupId: Long, replyTo: ActorRef[CommandResult]) extends Command

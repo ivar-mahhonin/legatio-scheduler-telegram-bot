@@ -9,7 +9,7 @@ import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-object SchedulesRepositoryManager extends RepositoryManager[Schedule] {
+object SchedulesRepositoryService extends RepositoryService[Schedule] {
   final case class GetAll(userId: String, chatId: String, replyTo: ActorRef[CommandResult]) extends Command
 
   final case class Create(message: String, date: String, replyTo: ActorRef[CommandResult]) extends Command

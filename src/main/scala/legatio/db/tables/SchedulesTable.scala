@@ -12,7 +12,6 @@ class SchedulesTable(tag: Tag) extends Table[Schedule](tag, Some("schedules"), "
 
   def date = column[Long]("date")
 
-
   def * = (
     id,
     userId,

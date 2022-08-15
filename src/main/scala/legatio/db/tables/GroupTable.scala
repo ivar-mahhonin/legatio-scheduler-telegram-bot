@@ -10,7 +10,6 @@ class GroupsTable(tag: Tag) extends Table[Group](tag, Some("schedules"), "Group"
 
   def isGroup = column[Boolean]("is_group")
 
-
   def * = (
     id,
     externalId,
