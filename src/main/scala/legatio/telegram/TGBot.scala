@@ -38,8 +38,8 @@ class TGBot(token: String) extends TelegramBot with Polling with Commands[Future
   implicit val timeout: Timeout = 3.seconds
 
   private var botIDOpt: Option[Long] = None
-  private val groups = RepositoryServices.groups
-  private val schedules = RepositoryServices.schedules
+  private val groupsServiceManager = RepositoryServices.groups
+  private val schedulesServiceManager = RepositoryServices.schedules
 
 
   override def run(): Future[Unit] = {
@@ -61,17 +61,17 @@ class TGBot(token: String) extends TelegramBot with Polling with Commands[Future
   }
 
   private def registerBotInGroup(chatId: ChatId): Future[TelegramBotProtocol] = {
-    groups.ask(ref => GroupsRepositoryService.RegisterInGroup(
+    groupsServiceManager.ask(ref => GroupsRepositoryService.RegisterInGroup(
       chatIdToLong(chatId), chatId.isChannel, chatId.isChat, ref)
     ).map {
-      case GroupsRepositoryService.AlreadyAddedToGroup => SuccessProtocol(s"[TGBot] Bot is already in the group[$chatId]")
+      case GroupsRepositoryService.AlreadyAddedToGroup => FailureProtocol(s"[TGBot] Bot is already in the group[$chatId]")
       case GroupsRepositoryService.RegisterInGroupSuccess => SuccessProtocol(s"[TGBot] Successfully registered bot in new group[$chatId]")
     }
   }
 
   private def removeBotFromGroup(chatId: ChatId): Future[TelegramBotProtocol] = {
-    RepositoryServices.groups.ask(ref => GroupsRepositoryService.RemoveFromGroup(chatIdToLong(chatId), ref)).map {
-      case GroupsRepositoryService.IsNotInGroup => SuccessProtocol(s"[TGBot] Bot is not in a group[$chatId]")
+    groupsServiceManager.ask(ref => GroupsRepositoryService.RemoveFromGroup(chatIdToLong(chatId), ref)).map {
+      case GroupsRepositoryService.IsNotInGroup => FailureProtocol(s"[TGBot] Bot is not in a group[$chatId]")
       case GroupsRepositoryService.RemoveFromGroupSuccess => SuccessProtocol(s"[TGBot] Successfully removed from group[$chatId]")
     }
   }

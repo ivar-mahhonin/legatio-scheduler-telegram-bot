@@ -23,8 +23,7 @@ object SchedulesRepositoryService extends RepositoryService[Schedule] {
   def behaviour(context: ActorContext[Command], name: String): PartialFunction[Command, Behavior[Command]] = {
     case Get(id, replyTo) =>
       context.log.info(s"[$name] Querying one schedule")
-      val oneScheduleFuture: Future[Option[Schedule]] = SchedulesRepository.getById(id)
-      context.pipeToSelf(oneScheduleFuture) {
+      context.pipeToSelf(SchedulesRepository.getById(id)) {
         case Success(value) => value match {
           case Some(value) => WrappedResult(GetSuccess(value), replyTo)
           case None => WrappedResult(ResultFailure(s"[$name] Schedule by id[$id] is missing"), replyTo)

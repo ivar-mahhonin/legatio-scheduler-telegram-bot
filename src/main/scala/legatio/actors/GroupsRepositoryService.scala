@@ -35,11 +35,7 @@ object GroupsRepositoryService extends RepositoryService[Group] {
         r <- if (groupOpt.isDefined) Future(AlreadyAddedToGroup) else insertFuture.map(_ => RegisterInGroupSuccess)
       } yield r
 
-      context.pipeToSelf(response) {
-        case Success(r) => WrappedResult(r, replyTo)
-        case Failure(ex) => WrappedResult(ResultFailure(ex.toString), replyTo)
-      }
-
+      wrapFuture(response,context, replyTo)
       Behaviors.same
     case RemoveFromGroup(groupId, replyTo) =>
       context.log.info(s"[$name] Removing bot from Chat[$groupId]")
@@ -52,10 +48,7 @@ object GroupsRepositoryService extends RepositoryService[Group] {
         r <- if (groupOpt.isDefined) deleteFuture.map(_ => RemoveFromGroupSuccess) else Future(IsNotInGroup)
       } yield r
 
-      context.pipeToSelf(response) {
-        case Success(r) => WrappedResult(r, replyTo)
-        case Failure(ex) => WrappedResult(ResultFailure(ex.toString), replyTo)
-      }
+      wrapFuture(response,context, replyTo)
       Behaviors.same
   }
 
