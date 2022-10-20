@@ -2,9 +2,9 @@ create schema schedules;
 
 create table if not exists schedules."Group" (
     "id" BIGINT primary key generated always as identity,
+    "name" TEXT NOT NULL,
     "external_id" BIGINT NOT NULL,
     "is_channel" BOOLEAN DEFAULT false,
-    "is_group" BOOLEAN DEFAULT false,
     "created_date" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updated_date" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

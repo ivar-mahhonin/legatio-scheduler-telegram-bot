@@ -11,6 +11,10 @@ class Repository[E <: BaseEntity, T <: Table[E] with BaseTable[E]]( t: => TableQ
   protected lazy val table = t
   protected lazy val db = DbConnection.db
 
+  def getAll(): Future[Seq[T#TableElementType]] = db.run {
+    table.result
+  }
+
   def getById(id: Long): Future[Option[E]] = db.run {
     getByIdQuery(id).result.headOption
   }
